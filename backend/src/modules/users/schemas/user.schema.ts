@@ -1,43 +1,45 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { Document } from 'mongoose';
+import { Role } from '@/auth/role/roles.enum';
 
-export type UserDocument = HydratedDocument<User>;
+export type UserDocument = User & Document;
 
-@Schema({ timestamps: true })
+// Định nghĩa sub-document cho profile
+class UserProfile {
+    @Prop({ type: String, text: true })
+    full_name: string;
+
+    @Prop({ type: String, default: '' })
+    avatar: string;
+
+    @Prop({ type: String, text: true, default: '' })
+    bio: string;
+}
+
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
 export class User {
-    @Prop()
-    name: string;
-
-    @Prop()
+    @Prop({ required: true, unique: true, index: true })
     email: string;
 
-    @Prop()
+    @Prop({ required: true })
     password: string;
 
-    @Prop()
-    phone: string;
-
-    @Prop()
-    address: string;
-
-    @Prop()
-    image: string;
-
-    @Prop({ default: "USERS" })
+    // Mặc định luôn là student theo yêu cầu. Admin mới có quyền đổi.
+    @Prop({ required: true, enum: Role, default: Role.STUDENT })
     role: string;
 
-    @Prop({ default: "LOCAL" })
-    accountType: string;
+    @Prop({ type: UserProfile, default: () => ({}) })
+    profile: UserProfile;
 
-    @Prop({ default: false })
-    isActive: boolean;
+    @Prop({ required: true, enum: ['active', 'banned', 'inactive'], default: 'inactive' })
+    status: string;
 
-    @Prop()
-    codeId: string;
+    // Các trường phục vụ các API cũ (kích hoạt, quên mật khẩu...)
+    @Prop({ type: String, default: null })
+    activationToken: string;
 
-    @Prop()
-    codeExpired: Date;
-
+    @Prop({ type: String, default: null })
+    resetPasswordToken: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

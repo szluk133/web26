@@ -1,56 +1,44 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { UsersService } from '@/modules/users/users.service';
-import { comparePasswordHelper } from '@/helpers/util';
 import { JwtService } from '@nestjs/jwt';
-import { ChangePasswordAuthDto, CodeAuthDto, CreateAuthDto } from './dto/create-auth.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService
-  ) { }
+  ) {}
 
-
-  async validateUser(username: string, pass: string): Promise<any> {
-    const user = await this.usersService.findByEmail(username);
-    if (!user) return null;
-
-    const isValidPassword = await comparePasswordHelper(pass, user.password);
-    if (!isValidPassword) return null;
-    return user;
+  async validateUser(email: string, pass: string): Promise<any> {
+    const user = await this.usersService.findByEmail(email);
+    if (user && (await bcrypt.compare(pass, user.password))) {
+      const { password, ...result } = user.toObject();
+      return result;
+    }
+    return null;
   }
 
   async login(user: any) {
-    const payload = { username: user.email, sub: user._id };
+    const payload = { email: user.email, sub: user._id, role: user.role };
     return {
-      user: {
-        email: user.email,
-        _id: user._id,
-        name: user.name
-      },
       access_token: this.jwtService.sign(payload),
+      user: {
+        _id: user._id,
+        email: user.email,
+        role: user.role,
+        profile: user.profile
+      }
     };
   }
 
-  handleRegister = async (registerDto: CreateAuthDto) => {
-    return await this.usersService.handleRegister(registerDto);
+  async register(registerDto: any) {
+    const existingUser = await this.usersService.findByEmail(registerDto.email);
+    if (existingUser) {
+      throw new BadRequestException('Email này đã được sử dụng.');
+    }
+    // Logic đăng ký sẽ gọi hàm create bên UsersService, 
+    // trong đó đã ép cứng role = 'student'
+    return this.usersService.create(registerDto);
   }
-
-  checkCode = async (data: CodeAuthDto) => {
-    return await this.usersService.handleActive(data);
-  }
-
-  retryActive = async (data: string) => {
-    return await this.usersService.retryActive(data);
-  }
-
-  retryPassword = async (data: string) => {
-    return await this.usersService.retryPassword(data);
-  }
-
-  changePassword = async (data: ChangePasswordAuthDto) => {
-    return await this.usersService.changePassword(data);
-  }
-
 }

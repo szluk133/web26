@@ -1,70 +1,49 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Res, UseGuards, Request, UnauthorizedException, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LocalAuthGuard } from './passport/local-auth.guard';
-import { Public, ResponseMessage } from '@/decorator/customize';
-import { ChangePasswordAuthDto, CodeAuthDto, CreateAuthDto } from './dto/create-auth.dto';
-import { MailerService } from '@nestjs-modules/mailer';
+import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly mailerService: MailerService
-  ) { }
-
-  @Post("login")
-  @Public()
-  @UseGuards(LocalAuthGuard)
-  @ResponseMessage("Fetch login")
-  handleLogin(@Request() req) {
-    return this.authService.login(req.user);
-  }
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  @Public()
-  register(@Body() registerDto: CreateAuthDto) {
-    return this.authService.handleRegister(registerDto);
+  async register(@Body() registerDto: any, @Res({ passthrough: true }) res: Response) {
+    const user = await this.authService.register(registerDto);
+    return {
+      message: 'Đăng ký thành công. Vui lòng kiểm tra email để kích hoạt tài khoản.',
+    };
   }
 
-  @Post('check-code')
-  @Public()
-  checkCode(@Body() registerDto: CodeAuthDto) {
-    return this.authService.checkCode(registerDto);
+  @Post('login')
+  async login(@Body() loginDto: any, @Res({ passthrough: true }) res: Response) {
+    const user = await this.authService.validateUser(loginDto.email, loginDto.password);
+    if (!user) {
+      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
+    }
+    
+    // Tạo token
+    const tokenData = await this.authService.login(user);
+
+    // XỬ LÝ THEO TÀI LIỆU KỸ THUẬT: TRẢ VỀ HTTP ONLY COOKIE CHỐNG XSS
+    res.cookie('access_token', tokenData.access_token, {
+      httpOnly: true, // Trình duyệt không thể truy cập bằng JavaScript
+      secure: process.env.NODE_ENV === 'production', // True nếu chạy trên HTTPS
+      sameSite: 'lax', 
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
+    });
+
+    return {
+      message: 'Đăng nhập thành công',
+      user: tokenData.user,
+      // Vẫn có thể trả về token ở body để dự phòng cho Mobile App tự lưu (nếu cần)
+      access_token: tokenData.access_token 
+    };
   }
 
-  @Post('retry-active')
-  @Public()
-  retryActive(@Body("email") email: string) {
-    return this.authService.retryActive(email);
-  }
-
-  @Post('retry-password')
-  @Public()
-  retryPassword(@Body("email") email: string) {
-    return this.authService.retryPassword(email);
-  }
-
-
-
-  @Post('change-password')
-  @Public()
-  changePassword(@Body() data: ChangePasswordAuthDto) {
-    return this.authService.changePassword(data);
-  }
-  @Get('mail')
-  @Public()
-  testMail() {
-    this.mailerService
-      .sendMail({
-        to: 'ads.hoidanit@gmail.com', // list of receivers
-        subject: 'Testing Nest MailerModule ✔', // Subject line
-        text: 'welcome', // plaintext body
-        template: "register",
-        context: {
-          name: "Eric",
-          activationCode: 123456789
-        }
-      })
-    return "ok";
+  @Post('logout')
+  async logout(@Res({ passthrough: true }) res: Response) {
+    // Xóa cookie khi đăng xuất
+    res.clearCookie('access_token');
+    return { message: 'Đăng xuất thành công' };
   }
 }
