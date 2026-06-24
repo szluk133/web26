@@ -48,6 +48,8 @@ import { TransformInterceptor } from '@/core/transform.interceptor';
           secure: true,
           // ignoreTLS: true,
           // secure: false,
+          logger: false,
+          debug: false,
           auth: {
             user: configService.get<string>('MAIL_USER'),
             pass: configService.get<string>('MAIL_PASSWORD'),
