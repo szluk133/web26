@@ -1,12 +1,14 @@
-import { Controller, Post, Body, Res, UseGuards, Request, UnauthorizedException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Res, UseGuards, Request, UnauthorizedException, HttpStatus, Get, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
+import { Public } from '@/decorator/customize';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @Public()
   async register(@Body() registerDto: any, @Res({ passthrough: true }) res: Response) {
     const user = await this.authService.register(registerDto);
     return {
@@ -14,7 +16,15 @@ export class AuthController {
     };
   }
 
+  // Bổ sung thêm API để click vào link kích hoạt từ email
+  @Get('activate')
+  @Public()
+  async activateAccount(@Query('token') token: string) {
+    return this.authService.activateAccount(token);
+  }
+
   @Post('login')
+  @Public()
   async login(@Body() loginDto: any, @Res({ passthrough: true }) res: Response) {
     const user = await this.authService.validateUser(loginDto.email, loginDto.password);
     if (!user) {

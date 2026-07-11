@@ -13,6 +13,12 @@ export class AuthService {
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.usersService.findByEmail(email);
     if (user && (await bcrypt.compare(pass, user.password))) {
+      
+      // Chặn đăng nhập nếu chưa activate (isActivate === false)
+      if (!user.isActivate) {
+        throw new UnauthorizedException('Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email để lấy mã kích hoạt.');
+      }
+
       const { password, ...result } = user.toObject();
       return result;
     }
@@ -38,7 +44,11 @@ export class AuthService {
       throw new BadRequestException('Email này đã được sử dụng.');
     }
     // Logic đăng ký sẽ gọi hàm create bên UsersService, 
-    // trong đó đã ép cứng role = 'student'
+    // trong đó đã ép cứng role = 'student' và sinh ra activationToken
     return this.usersService.create(registerDto);
+  }
+
+  async activateAccount(token: string) {
+    return this.usersService.activateAccount(token);
   }
 }

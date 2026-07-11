@@ -14,10 +14,10 @@ class UserProfile {
 
     @Prop({ type: String, text: true, default: '' })
     bio: string;
-}
+    }
 
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class User {
+    @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
+    export class User {
     @Prop({ required: true, unique: true, index: true })
     email: string;
 
@@ -33,6 +33,10 @@ export class User {
 
     @Prop({ required: true, enum: ['active', 'banned', 'inactive'], default: 'inactive' })
     status: string;
+
+    // Thêm trường kiểm tra trạng thái activate theo yêu cầu
+    @Prop({ type: Boolean, default: false })
+    isActivate: boolean;
 
     // Các trường phục vụ các API cũ (kích hoạt, quên mật khẩu...)
     @Prop({ type: String, default: null })

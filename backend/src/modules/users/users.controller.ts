@@ -4,7 +4,9 @@ import { JwtAuthGuard } from '@/auth/passport/jwt-auth.guard';
 import { RolesGuard } from '@/auth/role/roles.guard';
 import { Roles } from '@/auth/role/roles.decorator';
 import { Role } from '@/auth/role/roles.enum';
-
+import { UpdateRoleDto } from '@/modules/users/dto/update-role.dto';
+import { Public } from '@/decorator/customize';
+import { ResetPasswordDto } from '@/modules/users/dto/reset-password.dto';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -20,8 +22,8 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN) // <--- Chốt chặn ở đây
   @Patch(':id/role')
-  async updateRole(@Param('id') id: string, @Body('role') role: Role) {
-    return this.usersService.updateRole(id, role);
+  async updateRole(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
+    return this.usersService.updateRole(id, updateRoleDto.role);
   }
 
   // --- CÁC API CŨ ĐƯỢC GIỮ LẠI ---
@@ -43,5 +45,11 @@ export class UsersController {
   @Post('forgot-password')
   async forgotPassword(@Body('email') email: string) {
     return this.usersService.processForgotPassword(email);
+  }
+
+  @Post('reset-password')
+  @Public()
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.usersService.resetPassword(resetPasswordDto.token, resetPasswordDto.password);
   }
 }
