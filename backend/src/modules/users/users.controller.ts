@@ -18,15 +18,13 @@ export class UsersController {
     return this.usersService.findById(req.user._id);
   }
 
-  // API ĐỔI ROLE (CỐT LÕI): Phân quyền chặt chẽ CHỈ ADMIN
+  // API ĐỔI ROLE
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN) // <--- Chốt chặn ở đây
+  @Roles(Role.ADMIN)
   @Patch(':id/role')
   async updateRole(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
     return this.usersService.updateRole(id, updateRoleDto.role);
   }
-
-  // --- CÁC API CŨ ĐƯỢC GIỮ LẠI ---
 
   // Đổi thông tin cá nhân
   @UseGuards(JwtAuthGuard)

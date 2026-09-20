@@ -10,10 +10,14 @@ import { JwtAuthGuard } from './auth/passport/jwt-auth.guard';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { TransformInterceptor } from '@/core/transform.interceptor';
-
+import { CoursesModule } from './modules/courses/courses.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { RolesGuard } from '@/auth/role/roles.guard';
 @Module({
   imports: [
     UsersModule,
+    CategoriesModule,
+    CoursesModule,
     AuthModule,
     ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRootAsync({
@@ -61,6 +65,10 @@ import { TransformInterceptor } from '@/core/transform.interceptor';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
     {
       provide: APP_INTERCEPTOR,
