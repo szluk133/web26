@@ -13,11 +13,15 @@ import { TransformInterceptor } from '@/core/transform.interceptor';
 import { CoursesModule } from './modules/courses/courses.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { RolesGuard } from '@/auth/role/roles.guard';
+import { LessonsModule } from './modules/lessons/lessons.module';
+import { ChaptersModule } from './modules/chapters/chapters.module';
 @Module({
   imports: [
     UsersModule,
     CategoriesModule,
     CoursesModule,
+    LessonsModule,
+    ChaptersModule,
     AuthModule,
     ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRootAsync({
